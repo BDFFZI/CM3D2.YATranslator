@@ -21,7 +21,7 @@ namespace CM3D2.YATranslator.Plugin.Utils
             {
                 width = binaryReader.ReadInt32();
                 height = binaryReader.ReadInt32();
-                textureFormat = (TextureFormat) binaryReader.ReadInt32();
+                textureFormat = (TextureFormat)binaryReader.ReadInt32();
             }
 
             int bufferSize = binaryReader.ReadInt32();
@@ -34,7 +34,7 @@ namespace CM3D2.YATranslator.Plugin.Utils
             }
 
             binaryReader.Close();
-            return new TextureResource(width, height, textureFormat, pixelData);
+            return new TextureResource(width, height, textureFormat, null, pixelData);
         }
     }
 }

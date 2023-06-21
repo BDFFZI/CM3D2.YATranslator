@@ -29,6 +29,8 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
         {
             string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string hookDir = $"{SYBARIS_MANAGED_DIR}\\{HOOK_NAME}.dll";
+            if (assemblyDir == null)
+                return;
             var hookAssembly = AssemblyLoader.LoadAssembly(Path.Combine(assemblyDir, hookDir));
 
             if (Patchers.TryGetValue(assembly.Name.Name, out var patcher))
@@ -45,8 +47,8 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
             var textSetter = text.GetMethod("set_text");
             var onTranslateUiText = hookType.GetMethod(nameof(TranslationHooks.OnTranslateUiText));
             textSetter.InjectWith(onTranslateUiText,
-                                  tag: (int) StringType.Text,
-                                  flags: InjectFlags.PassParametersRef | InjectFlags.PassInvokingInstance | InjectFlags.PassTag);
+                tag: (int)StringType.Text,
+                flags: InjectFlags.PassParametersRef | InjectFlags.PassInvokingInstance | InjectFlags.PassTag);
 
             var setSprite = image.GetMethod("set_sprite");
             var onTranslateSprite = hookType.GetMethod(nameof(TranslationHooks.OnTranslateSprite));
@@ -83,9 +85,9 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
                 // Compatability patch for COM3D2 v1.13+
 
                 var newCtor = new MethodDefinition(".ctor",
-                                                   MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName
-                                                   | MethodAttributes.RTSpecialName,
-                                                   assembly.MainModule.Import(typeof(void)));
+                    MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName
+                    | MethodAttributes.RTSpecialName,
+                    assembly.MainModule.Import(typeof(void)));
 
                 newCtor.Parameters.Add(new ParameterDefinition(texResourceCtor.Parameters[0].ParameterType));
                 newCtor.Parameters.Add(new ParameterDefinition(texResourceCtor.Parameters[1].ParameterType));
@@ -99,7 +101,7 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
                 il.Append(il.Create(OpCodes.Ldarg_2));
                 il.Append(il.Create(OpCodes.Ldarg_3));
                 il.Append(il.Create(OpCodes.Ldnull));
-                il.Append(il.Create(OpCodes.Ldarg_S, (byte) 4));
+                il.Append(il.Create(OpCodes.Ldarg_S, (byte)4));
                 il.Append(il.Create(OpCodes.Call, assembly.MainModule.Import(texResourceCtor)));
                 il.Append(il.Create(OpCodes.Ret));
 
@@ -109,14 +111,14 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
             var infoReplace = scheduleApi.GetMethod("InfoReplace");
             var onTranslateInfoText = hookType.GetMethod(nameof(TranslationHooks.OnTranslateInfoText));
             infoReplace.InjectWith(onTranslateInfoText,
-                                   tag: (int) StringType.Template,
-                                   flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
+                tag: (int)StringType.Template,
+                flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
 
             var replaceCharaName = scriptManager.GetMethod("ReplaceCharaName", "System.String");
             var onTranslateConstText = hookType.GetMethod(nameof(TranslationHooks.OnTranslateConstText));
             replaceCharaName.InjectWith(onTranslateConstText,
-                                        tag: (int) StringType.Template,
-                                        flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
+                tag: (int)StringType.Template,
+                flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
 
             var loadTextureTarget = importCm.GetMethod("LoadTexture");
             var onArcTextureLoadHook = hookType.GetMethod(nameof(TranslationHooks.OnArcTextureLoad));
@@ -136,9 +138,9 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
             var onTranslateTextHook = hookType.GetMethod(nameof(TranslationHooks.OnTranslateText));
             var processAndRequestTarget = uiLabel.GetMethod("ProcessAndRequest");
             processAndRequestTarget.InjectWith(onTranslateTextHook,
-                                               tag: (int) StringType.UiLabel,
-                                               flags: InjectFlags.PassInvokingInstance | InjectFlags.PassFields | InjectFlags.PassTag,
-                                               typeFields: new[] {uiLabel.GetField("mText")});
+                tag: (int)StringType.UiLabel,
+                flags: InjectFlags.PassInvokingInstance | InjectFlags.PassFields | InjectFlags.PassTag,
+                typeFields: new[] { uiLabel.GetField("mText") });
             processAndRequestTarget.IsPublic = true;
             processAndRequestTarget.IsPrivate = false;
 
@@ -160,13 +162,13 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
 
             var freeSceneStart = freeSceneUi.GetMethod("FreeScene_Start");
             freeSceneStart.InjectWith(onTranslateConstText,
-                                      tag: (int) StringType.Const,
-                                      flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
+                tag: (int)StringType.Const,
+                flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
 
             var trophyStart = trophyUi.GetMethod("Trophy_Start");
             trophyStart.InjectWith(onTranslateConstText,
-                                   tag: (int) StringType.Const,
-                                   flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
+                tag: (int)StringType.Const,
+                flags: InjectFlags.PassParametersRef | InjectFlags.PassTag);
 
             var loadPlay = audioSrcMgr.GetMethod("Play");
             var onLoadSound = hookType.GetMethod(nameof(TranslationHooks.OnPlaySound));
@@ -188,8 +190,8 @@ namespace CM3D2.YATranslator.Sybaris.Patcher
             var getSeedButton = cultivationInv.GetMethod("GetSeedButton");
             var onGetSeedButton = hookType.GetMethod(nameof(TranslationHooks.OnGetSeedButton));
             getSeedButton.InjectWith(onGetSeedButton,
-                                     flags: InjectFlags.PassParametersVal | InjectFlags.ModifyReturn | InjectFlags.PassFields,
-                                     typeFields: new[] {cultivationInv.GetField("m_UIButtonPlantSeeds")});
+                flags: InjectFlags.PassParametersVal | InjectFlags.ModifyReturn | InjectFlags.PassFields,
+                typeFields: new[] { cultivationInv.GetField("m_UIButtonPlantSeeds") });
 
             var getSeedType = cultivationInv.GetMethod("GetSeedType");
             var onSystemTextTranslate = hookType.GetMethod(nameof(TranslationHooks.OnGetSeedType));

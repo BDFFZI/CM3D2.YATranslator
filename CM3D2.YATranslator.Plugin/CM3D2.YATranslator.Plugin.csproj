@@ -38,6 +38,9 @@
       <HintPath>..\Libs\ExIni.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Mono.Cecil.Inject">
+      <HintPath>..\Libs\Mono.Cecil.Inject.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />

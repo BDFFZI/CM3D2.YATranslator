@@ -184,10 +184,9 @@ namespace CM3D2.YATranslator.Plugin
                 Logger.WriteLine(ResourceType.Assets, LogLevel.Minor, $"FindAsset::{e.Name} [{e.Meta}::{e.CompoundHash}]");
             }
 
-            string[] namePossibilities =
-            {
-                    e.CompoundHash + "@" + SceneManager.GetActiveScene().buildIndex,
-                    e.Name + "@" + SceneManager.GetActiveScene().buildIndex, e.CompoundHash, e.Name
+            string[] namePossibilities = {
+                e.CompoundHash + "@" + SceneManager.GetActiveScene().buildIndex,
+                e.Name + "@" + SceneManager.GetActiveScene().buildIndex, e.CompoundHash, e.Name
             };
 
             foreach (string assetName in namePossibilities)
@@ -206,7 +205,7 @@ namespace CM3D2.YATranslator.Plugin
                     Logger.WriteLine(ResourceType.Assets, $"LoadAsset::{assetName}");
                 lastLoadedAsset = assetName;
 
-                e.Data = new TextureResource(1, 1, TextureFormat.ARGB32, File.ReadAllBytes(assetPath));
+                e.Data = new TextureResource(1, 1, TextureFormat.ARGB32, null, File.ReadAllBytes(assetPath));
                 return;
             }
 
@@ -278,7 +277,7 @@ namespace CM3D2.YATranslator.Plugin
             switch (replacement.TextureType)
             {
                 case TextureType.PNG:
-                    resource = new TextureResource(1, 1, TextureFormat.ARGB32, File.ReadAllBytes(replacement.FilePath));
+                    resource = new TextureResource(1, 1, TextureFormat.ARGB32, null, File.ReadAllBytes(replacement.FilePath));
                     break;
                 case TextureType.TEX:
                     resource = TexUtils.ReadTexture(File.ReadAllBytes(replacement.FilePath), textureName);

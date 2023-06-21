@@ -42,7 +42,7 @@ namespace CM3D2.YATranslator.Plugin.Utils
         private static bool dumpAllLevels;
         private static bool dumpFileLoaded;
 
-        private static readonly string[] DumpFolderNames = {"Strings", "Textures", "Assets", "Textures_Sprites", "Audio"};
+        private static readonly string[] DumpFolderNames = { "Strings", "Textures", "Assets", "Textures_Sprites", "Audio" };
 
         private static TextWriter dumpStream;
 
@@ -118,7 +118,7 @@ namespace CM3D2.YATranslator.Plugin.Utils
             }
 
             string dumpFilePath =
-                    Path.Combine(GetDumpFolderName(DumpType.Strings), $"{DUMP_FILENAME}.{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
+                Path.Combine(GetDumpFolderName(DumpType.Strings), $"{DUMP_FILENAME}.{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
             try
             {
                 dumpStream = File.CreateText(dumpFilePath);
@@ -212,8 +212,8 @@ namespace CM3D2.YATranslator.Plugin.Utils
                 return;
 
             var tex = duplicate || texture.format == TextureFormat.DXT1 || texture.format == TextureFormat.DXT5
-                              ? Duplicate(texture)
-                              : texture;
+                ? Duplicate(texture)
+                : texture;
             WriteLine($"Dumping {fileName}.png");
             using (var fs = File.Create(path))
             {
@@ -250,17 +250,17 @@ namespace CM3D2.YATranslator.Plugin.Utils
 
         private static string GetDumpFolderName(DumpType dumpType)
         {
-            return DumpFolderNames[(int) dumpType];
+            return DumpFolderNames[(int)dumpType];
         }
 
         private static Texture2D Duplicate(Texture texture)
         {
             WriteLine($"Duplicating texture {texture.name}");
             var render = RenderTexture.GetTemporary(texture.width,
-                                                    texture.height,
-                                                    0,
-                                                    RenderTextureFormat.Default,
-                                                    RenderTextureReadWrite.Linear);
+                texture.height,
+                0,
+                RenderTextureFormat.Default,
+                RenderTextureReadWrite.Linear);
             Graphics.Blit(texture, render);
             var previous = RenderTexture.active;
             RenderTexture.active = render;

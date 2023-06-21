@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CM3D2.YATranslator.Hook;
 using CM3D2.YATranslator.Plugin.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using Debug = UnityEngine.Debug;
 using Logger = CM3D2.YATranslator.Plugin.Utils.Logger;
 
 namespace CM3D2.YATranslator.Plugin.Features
@@ -69,9 +71,10 @@ namespace CM3D2.YATranslator.Plugin.Features
             lastPlayedName = mgr.FileName;
             currentAudioTracker.Stop();
 
+
             string soundName = Path.GetFileNameWithoutExtension(mgr.FileName);
             subtitleText.text = AUDIOCLIP_PREFIX + soundName;
-
+            Debug.Log($"[YATranslator:OnPlaySound] {soundName} {subtitleText.text}");
             if (subtitleText.text == soundName)
             {
                 lastWasTranslated = false;
@@ -117,7 +120,7 @@ namespace CM3D2.YATranslator.Plugin.Features
 
             subtitleText = panel.AddComponent<Text>();
             subtitleText.transform.SetParent(panel.transform, false);
-            var myFont = (Font) Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            var myFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
             subtitleText.font = myFont;
             subtitleText.material = myFont.material;
             subtitleText.text = string.Empty;
@@ -142,7 +145,7 @@ namespace CM3D2.YATranslator.Plugin.Features
             subtitleText = panel.AddComponent<Text>();
             subtitleText.transform.SetParent(panel.transform, false);
             subtitleText.transform.localPosition = new Vector3(0f, 0f, 10f);
-            var myFont = (Font) Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            var myFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
             subtitleText.font = myFont;
             subtitleText.material = myFont.material;
             subtitleText.text = string.Empty;
@@ -172,7 +175,7 @@ namespace CM3D2.YATranslator.Plugin.Features
             TranslationHooks.YotogiKagSubtitleCaptured -= OnYotogiSubtitleCapture;
         }
 
-        private string DisplayForLast(string text)
+        public string DisplayForLast(string text)
         {
             if (!Enabled || lastWasTranslated || lastPlayed == null || !lastPlayed.isPlaying)
                 return null;
@@ -185,15 +188,20 @@ namespace CM3D2.YATranslator.Plugin.Features
             return lastPlayedName;
         }
 
+        static int trackerCount;
+
         private void TrackAudio(AudioSource audoSrc)
         {
             IEnumerator TrackSubtitleAudio(AudioSource audio)
             {
+                trackerCount++;
                 yield return null;
                 while (audio != null && audio.isPlaying)
                     yield return new WaitForSeconds(0.1f);
+                trackerCount--;
 
-                subtitleText.text = string.Empty;
+                if (trackerCount == 0)
+                    subtitleText.text = string.Empty;
             }
 
             if (hideAfterSound)
