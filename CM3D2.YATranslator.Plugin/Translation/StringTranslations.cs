@@ -11,7 +11,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
     public class StringTranslations
     {
         private readonly Dictionary<Regex, string> loadedRegexTranslations;
-        private readonly Dictionary<string, string> loadedStringTranslations;
+        private readonly Dictionary<int, string> loadedStringTranslations;
         private readonly HashSet<string> translationFilePaths;
 
         public StringTranslations(int level)
@@ -20,7 +20,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
 
             translationFilePaths = new HashSet<string>();
             loadedRegexTranslations = new Dictionary<Regex, string>();
-            loadedStringTranslations = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            loadedStringTranslations = new Dictionary<int, string>(2048);
         }
 
         public int FileCount => translationFilePaths.Count;
@@ -40,7 +40,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
             if (!TranslationsLoaded)
                 LoadTranslations();
 
-            if (loadedStringTranslations.TryGetValue(original, out result))
+            if (loadedStringTranslations.TryGetValue(original.ToLower().GetHashCode(), out result))
                 return true;
 
             foreach (var regexTranslation in loadedRegexTranslations)
@@ -48,16 +48,15 @@ namespace CM3D2.YATranslator.Plugin.Translation
                 var m = regexTranslation.Key.Match(original);
                 if (!m.Success)
                     continue;
-                result = regexTranslation.Value.Template(s =>
-                {
+                result = regexTranslation.Value.Template(s => {
                     string capturedString;
                     if (int.TryParse(s, out int index) && index < m.Groups.Count)
                         capturedString = m.Groups[index].Value;
                     else
                         capturedString = m.Groups[s].Value;
-                    return loadedStringTranslations.TryGetValue(capturedString, out string groupTranslation)
-                                   ? groupTranslation
-                                   : capturedString;
+                    return loadedStringTranslations.TryGetValue(capturedString.ToLower().GetHashCode(), out string groupTranslation)
+                        ? groupTranslation
+                        : capturedString;
                 });
                 return true;
             }
@@ -112,46 +111,53 @@ namespace CM3D2.YATranslator.Plugin.Translation
 
             if (loadedValidTranslations)
                 Logger.WriteLine(ResourceType.Strings,
-                                 $"StringTranslations::Loaded {LoadedStringCount} Strings and {LoadedRegexCount} RegExes for level {Level}");
+                    $"StringTranslations::Loaded {LoadedStringCount} Strings and {LoadedRegexCount} RegExes for level {Level}");
 
             return loadedValidTranslations;
         }
 
         private bool LoadFromFile(string filePath)
         {
-            IEnumerable<string> translationLines;
+            int translated = 0;
+
             try
             {
-                translationLines = File.ReadAllLines(filePath, Encoding.UTF8).Select(m => m.Trim())
-                                       .Where(m => !m.StartsWith(";", StringComparison.CurrentCulture));
+                using (StreamReader reader = new StreamReader(filePath, Encoding.UTF8))
+                {
+                    string translationLine;
+                    while ((translationLine = reader.ReadLine()) != null)
+                    {
+                        //遍历每一行
+
+                        if (translationLine.StartsWith(";"))
+                            continue; //跳过注释文本
+
+                        var textParts = translationLine.Split(new[] { '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (textParts.Length < 2)
+                            continue; //跳过不规范文本
+
+                        string original = textParts[0].Unescape();
+                        string translation = textParts[1].Unescape().Trim();
+                        if (string.IsNullOrEmpty(translation))
+                            continue; //跳过无效翻译文本
+
+                        if (original.StartsWith("$", StringComparison.CurrentCulture))
+                        {
+                            loadedRegexTranslations[new Regex(original.Substring(1), RegexOptions.Compiled)] = translation;
+                            translated++;
+                        }
+                        else
+                        {
+                            loadedStringTranslations[original.ToLower().GetHashCode()] = translation;
+                            translated++;
+                        }
+                    }
+                }
             }
             catch (IOException ioe)
             {
                 Logger.WriteLine(LogLevel.Warning, $"Failed to load {filePath} because {ioe.Message}. Skipping file...");
                 return false;
-            }
-
-            int translated = 0;
-            foreach (string translationLine in translationLines)
-            {
-                var textParts = translationLine.Split(new[] {'\t'}, StringSplitOptions.RemoveEmptyEntries);
-                if (textParts.Length < 2)
-                    continue;
-                string original = textParts[0].Unescape();
-                string translation = textParts[1].Unescape().Trim();
-                if (string.IsNullOrEmpty(translation))
-                    continue;
-
-                if (original.StartsWith("$", StringComparison.CurrentCulture))
-                {
-                    loadedRegexTranslations[new Regex(original.Substring(1), RegexOptions.Compiled)] = translation;
-                    translated++;
-                }
-                else
-                {
-                    loadedStringTranslations[original] = translation;
-                    translated++;
-                }
             }
 
             return translated != 0;

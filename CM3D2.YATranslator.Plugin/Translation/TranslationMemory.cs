@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CM3D2.YATranslator.Plugin.Utils;
+using Debug = UnityEngine.Debug;
 
 namespace CM3D2.YATranslator.Plugin.Translation
 {
@@ -74,7 +76,13 @@ namespace CM3D2.YATranslator.Plugin.Translation
             if (CanLoadResouce(ResourceType.Textures))
                 LoadTextureTranslations();
             if (CanLoadResouce(ResourceType.Strings))
+            {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
                 LoadStringTranslations();
+                stopwatch.Stop();
+                Logger.WriteLine($"加载文本耗时 {stopwatch.Elapsed.TotalMilliseconds}ms");
+            }
         }
 
         public void LoadAssetTranslations()
@@ -107,7 +115,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
                 return text;
             }
 
-            var result = new TextTranslation {Result = TranslationResult.Ok};
+            var result = new TextTranslation { Result = TranslationResult.Ok };
 
             bool wasTranslated = translatedStrings.ContainsKey(original);
             string untranslated = original;
@@ -223,7 +231,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
 
                 try
                 {
-                    type = (TextureType) Enum.Parse(typeof(TextureType), ext, true);
+                    type = (TextureType)Enum.Parse(typeof(TextureType), ext, true);
                 }
                 catch (Exception)
                 {
@@ -233,7 +241,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
                 if (cachedTexturePaths.TryGetValue(fileName, out var replacement))
                 {
                     Logger.WriteLine(LogLevel.Warning,
-                                     $"Found a duplicate of {fileName} in `Textures` folder. Going to use {fileName}.{replacement.TextureType}.");
+                        $"Found a duplicate of {fileName} in `Textures` folder. Going to use {fileName}.{replacement.TextureType}.");
                     continue;
                 }
 
@@ -260,8 +268,8 @@ namespace CM3D2.YATranslator.Plugin.Translation
                 activeTranslations.LoadTranslations();
 
             Logger.WriteLine(IsOptimizationEnabled(MemoryOptimizations.LoadOnTranslate)
-                                     ? $"CacheString::Cached '{(activeTranslations?.FileCount ?? 0) + globalTranslations.FileCount}' translation files for Level '{level}'"
-                                     : $"CacheString::Cached '{(activeTranslations?.LoadedStringCount ?? 0) + globalTranslations.LoadedStringCount}' Strings and '{(activeTranslations?.LoadedRegexCount ?? 0) + globalTranslations.LoadedRegexCount}' Regexes for Level '{level}'");
+                ? $"CacheString::Cached '{(activeTranslations?.FileCount ?? 0) + globalTranslations.FileCount}' translation files for Level '{level}'"
+                : $"CacheString::Cached '{(activeTranslations?.LoadedStringCount ?? 0) + globalTranslations.LoadedStringCount}' Strings and '{(activeTranslations?.LoadedRegexCount ?? 0) + globalTranslations.LoadedRegexCount}' Regexes for Level '{level}'");
         }
 
         private void LoadStringTranslations()
@@ -296,8 +304,8 @@ namespace CM3D2.YATranslator.Plugin.Translation
                 if (Logger.IsLogging(ResourceType.Strings))
                 {
                     string levels = translationLevels.Length > 0
-                                            ? string.Join(",", translationLevels.Select(i => i.ToString()).ToArray())
-                                            : "";
+                        ? string.Join(",", translationLevels.Select(i => i.ToString()).ToArray())
+                        : "";
                     Logger.WriteLine($"CacheString::'{fileName}'@'[{levels}]'");
                 }
 
@@ -334,8 +342,8 @@ namespace CM3D2.YATranslator.Plugin.Translation
             }
 
             Logger.WriteLine(loadContentsIntoMemory
-                                     ? $"Strings::Loaded '{loadedStrings}' Translations"
-                                     : $"Strings::Pre-cached '{loadedFiles}' Translation files");
+                ? $"Strings::Loaded '{loadedStrings}' Translations"
+                : $"Strings::Pre-cached '{loadedFiles}' Translation files");
         }
     }
 }
