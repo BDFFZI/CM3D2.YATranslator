@@ -5,13 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using CM3D2.YATranslator.Plugin.Utils;
+using UnityEngine;
+using Logger = CM3D2.YATranslator.Plugin.Utils.Logger;
 
 namespace CM3D2.YATranslator.Plugin.Translation
 {
     public class StringTranslations
     {
         private readonly Dictionary<Regex, string> loadedRegexTranslations;
-        private readonly Dictionary<int, string> loadedStringTranslations;
+        private Dictionary<string, string> loadedStringTranslations;
         private readonly HashSet<string> translationFilePaths;
 
         public StringTranslations(int level)
@@ -20,7 +22,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
 
             translationFilePaths = new HashSet<string>();
             loadedRegexTranslations = new Dictionary<Regex, string>();
-            loadedStringTranslations = new Dictionary<int, string>(2048);
+            loadedStringTranslations = new Dictionary<string, string>(StringComparer.Ordinal);
         }
 
         public int FileCount => translationFilePaths.Count;
@@ -40,7 +42,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
             if (!TranslationsLoaded)
                 LoadTranslations();
 
-            if (loadedStringTranslations.TryGetValue(original.ToLower().GetHashCode(), out result))
+            if (loadedStringTranslations.TryGetValue(original, out result))
                 return true;
 
             foreach (var regexTranslation in loadedRegexTranslations)
@@ -54,7 +56,7 @@ namespace CM3D2.YATranslator.Plugin.Translation
                         capturedString = m.Groups[index].Value;
                     else
                         capturedString = m.Groups[s].Value;
-                    return loadedStringTranslations.TryGetValue(capturedString.ToLower().GetHashCode(), out string groupTranslation)
+                    return loadedStringTranslations.TryGetValue(capturedString, out string groupTranslation)
                         ? groupTranslation
                         : capturedString;
                 });
@@ -118,18 +120,29 @@ namespace CM3D2.YATranslator.Plugin.Translation
 
         private bool LoadFromFile(string filePath)
         {
+            FileInfo fileInfo = new FileInfo(filePath);
+            if (fileInfo.Exists == false)
+                return false;
+
             int translated = 0;
 
             try
             {
-                using (StreamReader reader = new StreamReader(filePath, Encoding.UTF8))
+                if (loadedStringTranslations.Count == 0)
+                {
+                    //优化仅加载单个文件的情况
+                    long projectedRowCount = fileInfo.Length / 200 + 1;
+                    loadedStringTranslations = new Dictionary<string, string>((int)projectedRowCount, StringComparer.Ordinal);
+                }
+
+                using (StreamReader reader = fileInfo.OpenText())
                 {
                     string translationLine;
                     while ((translationLine = reader.ReadLine()) != null)
                     {
                         //遍历每一行
 
-                        if (translationLine.StartsWith(";"))
+                        if (translationLine.Length == 0 || translationLine[0] == ';')
                             continue; //跳过注释文本
 
                         var textParts = translationLine.Split(new[] { '\t' }, StringSplitOptions.RemoveEmptyEntries);
@@ -141,14 +154,14 @@ namespace CM3D2.YATranslator.Plugin.Translation
                         if (string.IsNullOrEmpty(translation))
                             continue; //跳过无效翻译文本
 
-                        if (original.StartsWith("$", StringComparison.CurrentCulture))
+                        if (original[0] == '$')
                         {
                             loadedRegexTranslations[new Regex(original.Substring(1), RegexOptions.Compiled)] = translation;
                             translated++;
                         }
                         else
                         {
-                            loadedStringTranslations[original.ToLower().GetHashCode()] = translation;
+                            loadedStringTranslations[original] = translation;
                             translated++;
                         }
                     }
